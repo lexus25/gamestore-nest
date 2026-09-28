@@ -1,0 +1,67 @@
+name: CD
+
+on:
+    workflow_run:
+        workflows: ['CI']
+        types:
+            - completed
+        branches:
+            - main
+
+permissions:
+    contents: read
+    id-token: write
+
+env:
+    ACR_NAME: gamestorelexus
+    IMAGE_NAME: gamestore-api
+    RESOURCE_GROUP: gamestore-rg
+    CONTAINER_APP: gamestore-api
+
+jobs:
+    deploy:
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        runs-on: ubuntu-24.04
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.workflow_run.head_sha }}
+
+            - name: Azure login
+              uses: azure/login@v2
+              with:
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            - name: Login to Azure Container Registry
+              run: |
+                  az acr login --name "$ACR_NAME"
+
+            - name: Build Docker image
+              run: |
+                  docker build \
+                    -t "$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.event.workflow_run.head_sha }}" \
+                    .
+
+            - name: Push Docker image
+              run: |
+                  docker push \
+                    "$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.event.workflow_run.head_sha }}"
+
+            - name: Deploy to Azure Container Apps
+              run: |
+                  az containerapp update \
+                    --name "$CONTAINER_APP" \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --image "$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.event.workflow_run.head_sha }}"
+
+            - name: Show deployment
+              run: |
+                  az containerapp show \
+                    --name "$CONTAINER_APP" \
+                    --resource-group "$RESOURCE_GROUP" \
+                    --query "{name:name, url:properties.configuration.ingress.fqdn, revision:properties.latestRevisionName}" \
+                    -o table
