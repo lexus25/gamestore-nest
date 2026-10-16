@@ -14,9 +14,9 @@ permissions:
 
 env:
     ACR_NAME: gamestorelexus
-    IMAGE_NAME: gamestore-api
+    IMAGE_NAME: gamestore-vue-nest
     RESOURCE_GROUP: gamestore-rg
-    CONTAINER_APP: gamestore-api
+    CONTAINER_APP: gamestore-vue-nest
 
 jobs:
     deploy:

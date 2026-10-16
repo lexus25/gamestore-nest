@@ -2,9 +2,27 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
+    const frontendDir = join(process.cwd(), 'public');
+    if (existsSync(join(frontendDir, 'index.html'))) {
+        // Keep Vue's /games routes separate from the REST API.
+        app.setGlobalPrefix('backend');
+        app.useStaticAssets(frontendDir, { index: false });
+        app.use((req, res, next) => {
+            if (
+                (req.method === 'GET' || req.method === 'HEAD') &&
+                /^\/(?:games(?:\/[^/]+)?|about)?\/?$/.test(req.path)
+            ) {
+                return res.sendFile(join(frontendDir, 'index.html'));
+            }
+            next();
+        });
+    }
 
     app.useGlobalPipes(
         new ValidationPipe({
