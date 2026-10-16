@@ -13,6 +13,10 @@ async function bootstrap() {
         }),
     );
 
+    app.enableCors({
+        origin: 'http://localhost:5173',
+    });
+
     const config = new DocumentBuilder()
         .setTitle('GameStore API')
         .setDescription('GameStore REST API')

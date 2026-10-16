@@ -1,0 +1,34 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import GamesView from '../views/GamesView.vue'
+import GameDetailsView from '../views/GameDetailsView.vue'
+import AboutView from '../views/AboutView.vue'
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: '/',
+      redirect: '/games',
+    },
+    {
+      path: '/games',
+      name: 'games',
+      component: GamesView,
+    },
+    {
+      path: '/about',
+      name: 'about',
+      // route level code-splitting
+      // this generates a separate chunk (About.[hash].js) for this route
+      // which is lazy-loaded when the route is visited.
+      component: AboutView,
+    },
+    {
+      path: '/games/:id',
+      name: 'game-details',
+      component: GameDetailsView,
+    },
+  ],
+})
+
+export default router
